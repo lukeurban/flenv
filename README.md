@@ -20,12 +20,12 @@ For now, there are two necessary commands:
 - **`flenv init`** <- You use this command in your Flutter project. It creates `flenv.yaml` storing version of your current local Flutter version.
 - **`flenv fit`** <- You use this command in your Flutter project. It reads the version from `flenv.yaml` and sets it as a current/local Flutter environment. Other environments are not modified. Script forks new one.
 
-##Requirements
+## Requirements
 
 - **flutter**
 - **git**
 
-##Instalation
+## Instalation
 
 Go to directory where you want flenv to be placed.
 Type:
