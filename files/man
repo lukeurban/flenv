@@ -1,0 +1,21 @@
+               ********     
+            ********        
+          ********          
+       ********                 ________             
+     ********   (*******/      / ____/ /__  ____ _   __   
+      ****    ********        / /_  / / _ \/ __ \ | / /
+           ,////***          / __/ / /  __/ / / / |/ / 
+           //////%%         /_/   /_/\___/_/ /_/|___/  
+              %%%%%%%#      
+                %%%%%%%%          
+
+Flutter environment
+This small script allows you to have multiple instances of Flutter environment
+on one machine and change them depending on the project you're working on.
+
+For now, there are two necessary commands:
+    [*] flenv init  <-  You use this command in your Flutter project. 
+                        It creates flenv.yaml storing version of your current local Flutter version.
+    [*] flenv fit   <-  You use this command in your Flutter project. 
+                        It reads the version from flenv.yaml and sets it as a current/local Flutter environment.
+                        Other environments are not modified. Script forks new one.

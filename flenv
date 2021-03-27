@@ -1,0 +1,134 @@
+#!/bin/bash
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+
+help() {
+    cat $DIR/files/man
+}
+
+if [[ $# -eq 0 || $1 == "help" ]]; then
+    help
+    exit 1
+fi
+
+# EMOJI - trend is trend - no emoji no fun
+BLUE_HEART='\xF0\x9F\x92\x99'
+SYRINGE='\xF0\x9F\x92\x89'
+PARTY_POPPER='\xF0\x9F\x8E\x89'
+
+# Checking if flutter is istalled
+check_flutter() {
+    if ! command -v flutter &>/dev/null; then
+        echo "Flutter not found. PLease install https://pub.dev"
+        exit
+    fi
+}
+
+cecho() {
+    RED="\033[0;31m"
+    GREEN="\033[0;32m"
+    YELLOW="\033[1;33m"
+    PURPLE="\033[1;34m"
+    PINK="\033[1;35m"
+    CYAN="\033[1;36m"
+    GREY="\033[1;30m"
+    NC="\033[0m" # No Color
+
+    printf "${!1}${2} ${NC}"
+}
+check_flutter
+cecho "GREY" "$BLUE_HEART Retriving Flutter inforamtions $BLUE_HEART"
+
+#Main functions
+DOC_OUTPUT=$(flutter --version)
+WHERE_FLUTTER=$(which flutter)
+FLUTTER_VERSION=$(echo $DOC_OUTPUT | awk {'print $2'})
+FLUTTER_CHANNEL=$(echo $DOC_OUTPUT | awk {'print $5'})
+FLUTTER_PATH=$(dirname $(dirname $WHERE_FLUTTER))
+BASE_FLUTTER_PATH=$(dirname $FLUTTER_PATH)
+CONGIF_FILE_NAME="flenv.yaml"
+FLUTTER_GIT="git@github.com:flutter/flutter.git"
+
+test() {
+    sed -e 's/$FLUTTER_VERSION/'$FLUTTER_VERSION'/g' -e 's/$FLUTTER_CHANNEL/'$FLUTTER_CHANNEL'/g' $DIR/files/$CONGIF_FILE_NAME
+}
+
+_runFlutterDoctor() {
+    cecho "GREY" "\tRunning Flutter doctor... $SYRINGE\n"
+    $BASE_FLUTTER_PATH/flutter/bin/flutter doctor -v
+}
+
+_createSymlink() {
+    ln -snf $BASE_FLUTTER_PATH/flutter_${2}_${1} $BASE_FLUTTER_PATH/flutter
+}
+
+_copyAndChackout() {
+    BRANCH="master"
+    if [[ ! -z $2 ]]; then
+        BRANCH=$2
+    fi
+    cd $BASE_FLUTTER_PATH && git clone -b $BRANCH $FLUTTER_GIT flutter_${BRANCH}_${1} && cd flutter_${BRANCH}_${1} && git reset --hard $1
+}
+
+_addVerionSuffix() {
+    mv $FLUTTER_PATH $BASE_FLUTTER_PATH/flutter_${FLUTTER_CHANNEL}_${FLUTTER_VERSION}
+}
+
+_killCurrentDartProcess() {
+    ps ax | grep dart | head -1 | awk {'print $1'} | xargs kill -9 &>/dev/null
+}
+_checkIfFlutterPath() {
+    if [[ ! -e "$(pwd)/pubspec.yaml" ]]; then
+        cecho "RED" "This is not a flutter directory"
+        exit 1
+    fi
+}
+
+_setVersion() {
+    PROJECT_VERSION=$1
+    CHANNEL="master"
+    if [[ ! -z $2 ]]; then
+        CHANNEL=$2
+    fi
+    echo $BASE_FLUTTER_PATH/flutter_${CHANNEL}_${PROJECT_VERSION}
+    if [[ ! -e $BASE_FLUTTER_PATH/flutter_${CHANNEL}_${PROJECT_VERSION} ]]; then
+        if [[ "$PROJECT_VERSION" != "$FLUTTER_VERSION" || $CHANNEL != $FLUTTER_CHANNEL ]]; then
+            cecho "GREY" "Version for this project was not found. Forking new version\n"
+            cecho "GREEN" "\tSetting Flutter version from project: \e[1m$(cecho "CYAN" $PROJECT_VERSION)\n"
+            _copyAndChackout $PROJECT_VERSION $CHANNEL
+        else
+            cecho "GREY" "Local Flutter version and project verion is the same\n"
+            _addVerionSuffix $PROJECT_VERSION $CHANNEL
+        fi
+    fi
+    _createSymlink $PROJECT_VERSION $CHANNEL
+    cecho "GREEN" "$PARTY_POPPER Current Flutter version: $(cecho "CYAN" $PROJECT_VERSION)$(cecho "CYAN" $CHANNEL) $PARTY_POPPER\n"
+    _runFlutterDoctor
+}
+
+init() {
+    # Check if curretn directory is a Flutter directory and has flenv.yaml
+    _checkIfFlutterPath
+    if [[ -e "$(pwd)/$CONGIF_FILE_NAME" ]]; then
+        echo "This project has a flutter environment. Run" $(cecho "CYAN" "flenv fit") "to set Flutter version for this project"
+        exit 1
+    fi
+    # Create $CONGIF_FILE_NAME in project folder
+    sed -e 's/$FLUTTER_VERSION/'$FLUTTER_VERSION'/g' -e 's/$FLUTTER_CHANNEL/'$FLUTTER_CHANNEL'/g' $DIR/files/$CONGIF_FILE_NAME >$(pwd)/$CONGIF_FILE_NAME
+    _setVersion $FLUTTER_VERSION $FLUTTER_CHANNEL
+}
+
+fit() {
+    _checkIfFlutterPath
+    local ENV_FILE=$(echo $(pwd)/$CONGIF_FILE_NAME)
+    if [[ ! -e $ENV_FILE ]]; then
+        cecho "RED" "This doesnt have flenv file"
+        exit 1
+    fi
+    local PROJECT_VERSION=$(cat $ENV_FILE | grep "flutter_version:" | awk {'print $2'})
+    local CHANNEL=$(cat $ENV_FILE | grep "channel:" | awk {'print $2'})
+    _setVersion $PROJECT_VERSION $CHANNEL
+}
+
+_killCurrentDartProcess
+
+"$@"
