@@ -69,7 +69,7 @@ _copyAndChackout() {
     cd $BASE_FLUTTER_PATH && git clone -b $BRANCH $FLUTTER_GIT flutter_${BRANCH}_${1} && cd flutter_${BRANCH}_${1} && git reset --hard $1
 }
 
-_addVerionSuffix() {
+_addCurrentVerionSuffix() {
     mv $FLUTTER_PATH $BASE_FLUTTER_PATH/flutter_${FLUTTER_CHANNEL}_${FLUTTER_VERSION}
 }
 
@@ -89,15 +89,15 @@ _setVersion() {
     if [[ ! -z $2 ]]; then
         CHANNEL=$2
     fi
-    echo $BASE_FLUTTER_PATH/flutter_${CHANNEL}_${PROJECT_VERSION}
     if [[ ! -e $BASE_FLUTTER_PATH/flutter_${CHANNEL}_${PROJECT_VERSION} ]]; then
         if [[ "$PROJECT_VERSION" != "$FLUTTER_VERSION" || $CHANNEL != $FLUTTER_CHANNEL ]]; then
             cecho "GREY" "Version for this project was not found. Forking new version\n"
             cecho "GREEN" "\tSetting Flutter version from project: \e[1m$(cecho "CYAN" $PROJECT_VERSION)\n"
             _copyAndChackout $PROJECT_VERSION $CHANNEL
+            _addCurrentVerionSuffix
         else
             cecho "GREY" "Local Flutter version and project verion is the same\n"
-            _addVerionSuffix $PROJECT_VERSION $CHANNEL
+            _addCurrentVerionSuffix
         fi
     fi
     _createSymlink $PROJECT_VERSION $CHANNEL
